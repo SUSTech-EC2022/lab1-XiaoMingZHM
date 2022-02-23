@@ -29,23 +29,103 @@ fitness_pop=[];% record the best fitness in current population
 %% Below starting your code
 
 % Initialise a population
-%% TODO
+nbPopulation = 10;
+lenGene = 16;
+population = randi([0,1], nbPopulation, lenGene);
 
 
 % Evaluate the initial population
-%% TODO
+fitness = objective(bi2de(population, 'left-msb'));
+nbEval = nbEval + nbPopulation;
+
+
+% Record
+fittest = 0;
+for i = 1:nbPopulation
+    if fittest(1) < fitness(i)
+        fittest = [fitness(i),i];
+    end
+    if bestSoFarFit < fitness(i)
+        bestSoFarFit = fitness(i);
+        bestSoFarSolution = bi2de(population(i,:), 'left-msb');
+    end
+end
+fitness_gen=[fitness_gen; bestSoFarFit];
+solution_gen=[solution_gen; bestSoFarSolution];
+fitness_pop = [fitness_pop; fittest];
+nbGen = nbGen +1;
 
 % Start the loop
 while (nbEval<T) 
-% Reproduction (selection, crossver)
-%% TODO
+    % Roulette-wheel selection
+    probability = fitness/sum(fitness);
+    offspring = [];
+    while size(offspring, 1) < nbPopulation
+        parent1 = [];
+        parent2 = [];
+        r1 = rand();
+        r2 = rand();
+        rs = 0;
+        for i = 1:nbPopulation
+            rs = rs + probability(i);
+            if r1 < rs
+                parent1 = population(i,:);
+                r1 = 2;
+            end
+            if r2 < rs
+                parent2 = population(i,:);
+                r2 = 2;
+            end
+        end 
+        % One point crossover
+        crossoverPoint = randi(lenGene-1);
+        offspring = [offspring; [parent1(1:crossoverPoint), parent2(crossoverPoint+1:lenGene)]];
+        offspring = [offspring; [parent2(1:crossoverPoint), parent1(crossoverPoint+1:lenGene)]];
+    end
+    offspring = offspring(1:nbPopulation, :);
 
-% Mutation
-%% TODO
+    population = offspring;
 
+    % Bit-flipping mutation
+    mutationProb = 1/lenGene;
+    for i = 1:nbPopulation
+        r = rand();
+        mutate = rand([1, lenGene]);
+        mutate = mutate < r;
+        offspring(i,:) = (1-offspring(i,:)).*mutate + offspring(i,:).*(1-mutate); % XOR operation
+    end
+    
+    % Evaluate the polulation
+    population = offspring;
+    fitness = objective(bi2de(population, 'left-msb'));
+    nbEval = nbEval + nbPopulation;
+    nbGen = nbGen + 1;
+    % Record
+    fittest = 0;
+    for i = 1:nbPopulation
+        if fittest(1) < fitness(i)
+            fittest = [fitness(i),i];
+        end
+        if bestSoFarFit < fitness(i)
+            bestSoFarFit = fitness(i);
+            bestSoFarSolution = bi2de(population(i,:), 'left-msb');
+        end
+    end
+    fitness_gen=[fitness_gen; bestSoFarFit];
+    solution_gen=[solution_gen; bestSoFarSolution];
+    fitness_pop = [fitness_pop; fittest];
+end
+bestSoFarFit;
+bestSoFarSolution;
 
-bestSoFarFit
-bestSoFarSolution
+figure,plot(1:nbGen,fitness_gen,'b') 
+title('Fitness\_Gen')
+
+figure,plot(1:nbGen,solution_gen,'b') 
+title('Solution\_Gen')
+
+figure,plot(1:nbGen,fitness_pop,'b') 
+title('Fitness\_Pop')
 
 
 
